@@ -1,0 +1,4 @@
+sanic
+sscopes
+sanic-jwt
+cryptography

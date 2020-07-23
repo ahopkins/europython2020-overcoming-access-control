@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>EuroPython 2020 - Adam Hopkins</title>
+	<meta charset="utf-8" />
+	<meta name="viewport"
+		content="user-scalable=no,initial-scale=1,maximum-scale=1,minimum-scale=1,width=device-width" />
+	<link rel="stylesheet" type="text/css" href="./css/quasar.min.css" />
+	<link rel="stylesheet" type="text/css" href="./css/pure-min.css" />
+	<link rel="stylesheet" type="text/css" href="./css/spaces.css" />
+	<link rel="stylesheet" type="text/css" href="./css/typo.css" />
+	<link rel="stylesheet" type="text/css" href="./css/devices.min.css" />
+	<link rel="stylesheet" type="text/css" href="./css/gh-fork-ribbon.css" />
+	<link rel="stylesheet" type="text/css" href="./css/nord-dark.css" />
+	<link rel="stylesheet" type="text/css" href="./css/nord-light.css" />
+	<link rel="stylesheet" type="text/css" href="./css/font-nord.css" />
+	<link rel="stylesheet" type="text/css" href="./css/bg-nord.css" />
+	<link rel="stylesheet" type="text/css" href="./css/font-open-color.css" />
+	<link rel="stylesheet" type="text/css" href="./css/bg-open-color.css" />
+	<link rel="stylesheet" type="text/css" href="./css/material-icons.css" />
+	<link rel="stylesheet" type="text/css" href="./css/abs-layout.css" />
+	<link rel="stylesheet" type="text/css" href="./css/border-layout.css" />
+	<link rel="stylesheet" type="text/css" href="./css/text-rect.css" />
+	<link rel="stylesheet" type="text/css" href="./css/text-circle.css" />
+	<link rel="stylesheet" type="text/css" href="./css/card.css" />
+	<link rel="stylesheet" type="text/css" href="./css/lines.css" />
+	<link rel="stylesheet" type="text/css" href="./css/filters.css" />
+	<link rel="stylesheet" type="text/css" href="./fonts/remixicon.css" />
+	<link rel="stylesheet" type="text/css" href="./css/style.css" />
+	<link rel="stylesheet" type="text/css" href="./css/override.css" />
+
+	<script src="https://twemoji.maxcdn.com/v/latest/twemoji.min.js" crossorigin="anonymous"></script>
+
+</head>
+
+<body>
+	<textarea id="source">
+layout: true
+class: typo, typo-selection
+
+---
+
+count: false
+class: nord-dark, center, middle
+
+.rect.height-35[
+	.width-70[
+		.center[
+			![](images/europython.png)
+		]
+	]
+]
+
+# Overcoming access control<br />in web APIs
+
+#### How to address security concerns using .oc-pink-7[Sanic]
+
+Adam Hopkins
+---
+
+class: border-layout, nord-dark
+
+.east.height-100.width-65.p-xxs.ml-m[
+	.card.noborder.noround.m-0.width-100.height-100[
+.font-sm[
+```python
+class Adam:
+
+	def __init__(self):
+		self.work = PacketFabric("Sr. Software Engineer")
+		self.oss = Sanic("Core Maintainer")
+		self.home = Israel("Negev")
+
+	async def run(self, inputs: Union[Pretzels, Coffee]) -> None:
+		while True:
+			await self.work.do(inputs)
+			await self.oss.do(inputs)
+		
+	def sleep(self):
+		raise NotImplemented
+```
+]
+.left[
+
+- [PacketFabric](https://packetfabric.com/) - .font-sm[Network-as-a-Service platform; private access to the cloud; secure connectivity between data centers ]
+- [Sanic Framework](https://sanicframework.org/) - .font-sm[ Python 3.6+ `asyncio` enabled framework and server. Build fast. Run fast. ]
+- [GitHub - /ahopkins](https://github.com/ahopkins)
+- [Twitter - @admhpkns](https://twitter/admhpkns)
+		]
+	]
+]
+.west.width-30[
+	.pt-xxl.ml-xxl[
+		.width-100[
+			.center[
+				.width-80[
+					![](images/profile.png)
+				]
+				.width-80[
+					![](images/packetfabric.png)
+				]
+				.width-80[
+					![](images/sanic.png)
+				]
+			]
+		]
+	]
+]
+
+???
+
+PacketFabric’s Network-as-a-Service platform weaves together a perfect solution for networking. It provides private
+access to the cloud, secure connectivity between data centers, an easy on ramp to the secure internet all coupled with
+network automation. It's built for the way we do business today. Plus, we were just named one of the Top Ten Hottest
+Networking Startups by CRN Magazine,
+
+---
+
+class: nord-dark
+
+# What we will **NOT** cover?
+
+- TLS
+- Password and other sensitive information storage
+- Server security
+- SQL injection
+- Data validation
+
+.abs-layout.right-12.bottom-0.width-33.center[
+	![](images/beware.jpg)
+]
+
+???
+
+**0:55**
+
+These are things you need to be aware of
+
+Please send a message in the chat, Sanic forums, or Twitter and I'll be happy to send more infor on these.
+
+Goal is to discuss some of the issues, and decide which option is best for you
+
+---
+
+class: nord-dark
+
+### 1. Authentication - <small>Do I know who this person is?</small>
+### 2. Authorization - <small>Should I let them in?</small>
+
+.mermaid.font-sm[
+<pre>
+	graph LR
+		L{1. Logged in?} --no--> 401(401 Unauthorized)
+		L --yes--> A{2. Allow access?}
+		A --no--> 403(403 Forbidden)
+		A --yes--> 200(200 OK)
+</pre>
+]
+
+---
+
+class: nord-dark, middle
+
+```python
+@app.get("/protected")
+async def top_secret(request):
+	return json({"foo":"bar"})
+```
+
+--
+
+```bash
+curl localhost:8000/protected -i
+HTTP/1.1 200 OK
+Content-Length: 13
+Content-Type: application/json
+Connection: keep-alive
+Keep-Alive: 5
+
+{"foo":"bar"}
+```
+
+???
+
+**2:20**
+
+---
+
+class: nord-dark, middle
+
+```python
+async def do_protection(request):
+	...
+
+
+def protected(wrapped):
+	def decorator(handler):
+		async def decorated_function(request, *args, **kwargs):
+
+			await do_protection(request)
+			return await handler(request, *args, **kwargs)
+
+		return decorated_function
+
+	return decorator(wrapped)
+
+
+@app.get("/protected")
+@protected
+async def top_secret(request):
+	return json({"foo": "bar"})
+```
+
+---
+
+class: nord-dark, middle
+
+```python
+async def do_protection(request):
+	...
+
+@app.middleware('request')
+async def global_authentication(request):
+	await do_protection(request)
+```
+
+---
+
+class: nord-dark
+
+# Remember!
+
+.pt-xs.center[
+	| | Status Code | Status Text |
+	|---|---|---|
+	| Authentication | 401 | Unauthorized 🤔 |
+	| Authorization | 403 | Forbidden ⛔ |
+]
+
+--
+
+
+```python
+from sanic.exceptions import Forbidden, Unauthorized
+
+async def do_protection(request):
+	if not await is_authenticated(request):
+		raise Unauthorized("Who are you?")
+
+	if not await is_authorized(request):
+		raise Forbidden("You are not allowed")
+```
+
+???
+
+If you walk away with nothing else, remember:
+
+401 -> Authentication
+403 -> Authorization
+
+Also - 404
+
+---
+
+class: nord-dark, middle
+
+```bash
+curl localhost:8000/protected -i
+HTTP/1.1 401 Unauthorized
+Content-Length: 49
+Content-Type: application/json
+Connection: keep-alive
+Keep-Alive: 5
+
+{"error":"Unauthorized","message":"Who are you?"}
+```
+
+???
+
+**4:20**
+
+---
+
+class: nord-dark, middle
+
+```python
+async def is_authenticated(request):
+    """How are we going to authenticate requests?"""
+```
+
+---
+
+class: nord-dark
+
+# Common authentication strategies
+
+.font-xl[
+- Basic
+- Digest
+- Bearer
+- OAuth
+- Session
+]
+
+---
+
+class: nord-dark
+
+# Common authentication strategies
+
+.font-xl[
+- .strike[Basic]
+- .strike[Digest]
+- Bearer
+- .strike[OAuth]
+- Session
+]
+
+???
+
+We are going to ignore the first two because they are more legacy and insecure. Not really for APIs.
+
+As for OAuth, that is really a seperate conversation that we can have over the Discord channel or offline.
+
+---
+
+class: nord-dark, center, middle
+
+# Forget what you know!
+.block-middle.width-33[
+![](images/forget.jpg)
+]
+
+???
+
+Forget what you know about sessions, cookies, auth headers and how to use them
+
+---
+
+class: nord-dark, center, middle
+
+# Train pass 🚄
+
+.column-2.pb-xxl[
+	.block-middle.width-88[
+		.font-xl[**Session**] based<br />
+		Single Ride 🎟️<br />
+		Point A to Point B<br />
+	]
+	.block-middle.width-100[
+		.strike[**Bearer**] .font-xl[**Non-session**] based<br />
+		All day pass 🎫<br />
+		Off and on at any stop 🚏<br />
+	]
+]
+
+???
+
+**5:20**
+
+On our hypothetical train, the conductor checks everyone's ticket at each station
+The session tickets, he looks up on his tablet to make sure ticket 123456 is still good
+Non-session, he looks at the ticket that has a time on it, he verifies that his company issued the ticket
+
+
+Session
+	- Conductor checkes your ticket at every stop
+	- Verifies that they have a record of the ticket and that it is still validation
+
+Non-session
+	- Anyone that has it can use it
+	- Self-validating
+
+---
+
+class: nord-dark
+
+# **Session** based 🎟️
+
+.abs-layout.right-4.top-12.width-33.right.font-l[
+	aka Single Ride 🚄
+]
+
+.mermaid[
+<pre>
+	sequenceDiagram
+	Client->>Server: /login using credentials
+	Server->>Datastore: persist session details
+	Server->>Client: session_id
+	Client->>Server: /protected using session_id
+	Server->>Datastore: confirm session_id
+	Datastore->>Server: OK
+	Server->>Client: protected resource
+</pre>
+]
+
+???
+
+**7:00**
+
+
+---
+
+class: nord-dark
+
+# .strike[**Bearer**] **Non-session** based 🎫
+
+.abs-layout.right-4.top-12.width-33.right.font-l[
+	All day pass 🚄
+]
+
+.mermaid[
+<pre>
+	sequenceDiagram
+	Client->>Server: /login using credentials
+	Server->>Server: generate token
+	Server->>Client: token
+	Client->>Server: /protected using token
+	Server->>Server: confirm authenticity, etc
+	Server->>Client: protected resource
+</pre>
+]
+
+---
+
+class: nord-dark, center, middle
+
+# Hold that thought ...
+
+---
+
+class: nord-dark
+
+# Let's decide on an auth strategy...
+
+1. Who will .oc-pink-7[consume] the API?<br />
+	<small>Applications? Scripts? People?</small>
+1. Do you have .oc-pink-7[control] over the client?
+1. Will this power a .oc-pink-7[web browser] frontend application?
+
+???
+
+**8:00**
+
+---
+
+class: nord-dark, center, middle
+
+<small>What we really want to know is...</small>
+# **Direct** API v. **Browser** Based API<br />(or both)
+
+---
+
+class: border-layout, nord-dark, center
+
+.column-2.pt-l.mr-s[
+	.block-middle.width-88[
+		.font-xl[**Direct**] API
+.left[
+- .oc-pink-7[Fewer] security concerns
+- Scripts, mobile apps, non-browser clients
+- More techinically sophisticated users
+- API key or JWT
+
+.font-xs[
+```bash
+$ curl https://foo.bar/protected
+```
+]<br />
+]
+.oc-green-3[Solved] ✅
+
+
+	]
+	.block-middle.width-100[
+		.font-xl[**Browser Based**] API
+.left[
+- .oc-pink-7[More] security concerns <small>(CSRF, XSS)</small>
+- Web applications<br /><br />
+- Lesser techinically sophisticated users<br /><br />
+- Session ID or JWT
+
+.font-xs[
+```javascript
+fetch('https://foo.bar/protected').then(r => {
+	console.log(response)
+})
+```
+]
+]
+.oc-gray-6[Unsolved] 🤷‍♂️
+	]
+]
+
+???
+
+**9:00**
+
+People often make distinction of Bearer/Token/JWT as Header
+and Sessions as cookies
+
+This is a mistake
+
+The real distinction should be Direct v Browser
+
+DIRECT
+	- Pure web request
+	- Using cookies is sort of breaking their intended purpose
+
+BROWSER
+	- MANY security concerns need addressing
+
+---
+
+class: nord-dark
+
+# **Browser Based** API Concerns
+
+1. .font-xl[How should the browser .oc-pink-7[store] the token?] <small>(XSS)</small><br />
+<small>Cookie, localStorage, sessionStorage, in memory</small>
+1. .font-xl[How should the browser .oc-pink-7[send] the token?] <small>(CSRF)</small><br />
+<small>Cookie, Authentication header</small>
+
+???
+
+Let's talk about the pros and cons of all of these options
+
+.pt-l[
+	![](images/cookie-monster.png)
+]
+
+---
+
+class: border-layout, nord-dark, center
+
+# Typical recommendations
+
+.column-2.pt-l.mr-s.ml-s[
+	.block-middle.width-100[
+		.font-xl[Session] based 🎟️
+.left.font-sm[
+- .oc-pink-7[Stored]: `Set-Cookie: token=<TOKEN>`
+- .oc-pink-7[Sent]: `Cookie: token=<TOKEN>`
+- Subject to **CSRF**
+- Fixed with: `X-XSRF-TOKEN: <CSRFTOKEN>`
+	]
+	.oc-green-3[Solved] ✅
+	]
+	.block-middle.width-100[
+	.font-xl[Non-session] based 🎫
+.left.font-sm[
+- .oc-pink-7[Stored]: JS accessible
+- .oc-pink-7[Sent]: `Authorization: Bearer <TOKEN>`
+- Subject to **XSS**<br /><br />
+]
+.oc-gray-6[Unsolved] 🤷‍♂️
+	]
+]
+
+???
+
+**12:05**
+
+---
+
+class: nord-dark
+
+# How do we .oc-pink-7[authenticate]?
+
+- Session based 🎟️ v. Non-session based 🎫
+- Direct API v. Browser Based API (or both)
+- API key v. Session ID v. JWT
+
+--
+
+### .oc-green-3[Solutions]:
+
+✅ .oc-green-3[Direct] API using .oc-green-3[API key] in .oc-green-3[`Authorization` header]<br />
+✅ .oc-green-3[Browser Based] API using .oc-green-3[session ID] in .oc-green-3[cookies]
+
+--
+
+### But what about:
+
+- Both .oc-pink-7[Direct] API and .oc-pink-7[Browser Based] API?
+--
+
+- .oc-pink-7[Browser Based] API using .oc-pink-7[non-session] tokens, aka .oc-pink-7[JWTs]?
+
+
+---
+
+class: nord-dark, center, middle
+
+![](images/pills.jpg)
+
+---
+
+class: nord-dark
+
+# Anatomy of a JWT
+
+.overflow-wrap[.oc-orange-5[eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9]..oc-cyan-5[eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ]..oc-grape-4[SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c]]
+
+???
+
+**15:50**
+
+---
+
+class: nord-dark
+
+# Anatomy of a JWT
+
+.overflow-wrap[.oc-orange-5[eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9]]
+.font-sm[
+```json
+{
+	"alg": "HS256",
+	"typ": "JWT"
+}
+```
+]
+.overflow-wrap[.oc-cyan-5[eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ]]
+.font-sm[
+```json
+{
+	"sub": "1234567890",
+	"name": "John Doe",
+	"iat": 1516239022
+}
+```
+]
+.overflow-wrap[.oc-grape-4[SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c]]
+```json
+signature
+```
+
+
+---
+
+class: nord-dark
+
+# Anatomy of a JWT
+
+.overflow-wrap[`Set-Cookie access_token=`<br />.oc-orange-5[eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9]..oc-cyan-5[eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ]; `Secure`]
+
+.overflow-wrap[`Set-Cookie access_token_signature=`<br />.oc-grape-4[SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c]; `Secure; HttpOnly`]
+
+???
+
+**17:30**
+
+
+--
+.abs-layout.bottom-0.right-0[
+![](images/cookie-monster.png)
+]
+
+---
+
+class: nord-dark
+
+
+# Split JWT cookies
+
+.font-sm[
+```python
+header_payload, signature = access_token.rsplit(".", maxsplit=1)
+
+set_cookie(
+	response, "access_token", header_payload, httponly=False
+)
+
+set_cookie(
+	response, "access_token_signature", signature, httponly=True,
+)
+
+set_cookie(
+	response, "csrf_token", generate_csrf_token(), httponly=False,
+)  # Do we even need this? Perhaps not!
+
+def set_cookie(response, key, value, httponly=None):
+	response.cookies[key] = value
+	response.cookies[key]["httponly"] = httponly
+	response.cookies[key]["path"] = "/"
+	response.cookies[key]["domain"] = "foo.bar"
+	response.cookies[key]["expires"] = datetime(...)
+	response.cookies[key]["secure"] = True
+```
+]
+
+???
+
+**18:10**
+
+---
+
+class: border-layout, nord-dark, center
+
+# We found a winner 🏆
+
+.column-1.pt-l.mr-s.ml-s[
+	.block-middle.width-60[
+		.font-xl[.strike[Non-session] Stateless JWT] based 🎫
+		.left.font-sm[
+- .oc-pink-7[Stored]: .strike[JS accessible] 2 cookies
+- .oc-pink-7[Sent]: .strike[`Authorization: Bearer <TOKEN>`] 2 cookies<br />
+	Also, 1 token via Header for CSRF protection
+- .strike[Subject to] Secured from **XSS**<br /><br />
+		]
+		.oc-green-3[Solved] ✅
+	]
+]
+
+???
+
+**19:30**
+
+---
+
+class: nord-dark, middle
+
+.font-sm[
+```python
+def extract_token(request):
+	access_token = request.cookies.get("access_token")
+	access_token_signature = request.cookies.get("access_token_signature")
+
+	return f"{access_token}.{access_token_signature}"
+
+def is_authenticated(request):
+	token = extract_token(request)
+	
+	try:
+		jwt.decode(token, ...)
+	except Exception:
+		return False
+	else:
+		return True
+```
+]
+
+---
+
+class: nord-dark, middle
+
+.font-sm[
+```python
+
+def do_protection(request):
+	if not is_authenticated(request):
+		raise Unauthorized("Who are you?")
+
+	if not is_authorized(request):
+		raise Forbidden("You are not allowed")
+
+	if not is_pass_csrf(request):
+		raise Forbidden("You CSRF thief!")
+```
+]
+
+???
+
+**21:00**
+
+I don't have time to go over CSRF protection in full, but I will put the code
+and example on how to do that in the repo with the slides
+
+---
+
+class: nord-dark, middle
+
+.font-sm[
+```python
+def is_authorized(request):
+	"""How shall we do this?"""
+```
+]
+
+---
+
+class: nord-dark, center
+
+### Structured Scopes
+
+.font-xxxl.center[.oc-pink-7[user]:read:write]
+.font-l.center[.oc-pink-7[namespace]:action(s)]
+
+--
+
+.font-xxxl.center[.oc-pink-7[user]:read]
+
+--
+
+.font-xxxl.center[.oc-green-3[Pass] ✅]
+
+---
+
+class: nord-dark, middle
+
+```python
+from sscopes import validate
+
+is_valid = validate("user:read", "user:read:write")
+print(is_valid)
+# True
+```
+
+???
+
+**23:00**
+
+---
+
+class: nord-dark, middle
+
+.font-sm[
+```python
+def is_authorized(request, base_scope):
+	if base_scope:
+		token = extract_token(request)
+		payload = token.decode(token, ...)
+		
+		return validate(base_scope, payload.get("scopes"))
+	return True
+```
+]
+
+---
+
+class: nord-dark, middle
+
+```python
+@app.get("/protected")
+@protected("user:read")
+async def top_secret(request):
+	return json({"foo":"bar"})
+```
+
+--
+
+```javascript
+fetch('https://foo.bar/protected').then(async response => {
+	console.log(await response.json())
+})
+```
+
+---
+
+class: nord-dark, middle, center
+
+# There must be a better way 🤯
+
+--
+
+```bash
+pip install sanic-jwt
+```
+
+???
+
+**24:15**
+
+---
+
+class: nord-dark, middle
+
+.font-sm[
+```python
+from sanic_jwt import Initialize, decorators
+
+async def authenticate(request):
+	"""Check that username and password are valid"""
+
+async def retrieve_user(request):
+	"""Get a user object from DB storage"""
+
+async def my_scope_extender(user):
+	return user.scopes
+
+app = Sanic()
+Initialize(
+	app,
+	authenticate=authenticate,               # sanic-jwt required handler
+	retrieve_user=retrieve_user,
+	add_scopes_to_payload=my_scope_extender,
+	cookie_set=True,                         # Set and accept JWTs in cookies
+	cookie_split=True,                       # Expect split JWT cookies
+	cookie_strict=False,                     # Allow fallback to Authorization header
+)
+
+@app.get("/protected")
+@decorators.scoped("user:read")
+async def top_secret(request):
+	...
+```
+]
+
+---
+
+class: nord-dark, middle
+
+```bash
+
+https://foo.bar/auth           # Login with username/password
+https://foo.bar/auth/verify    # Verify a valid JWT was passed
+https://foo.bar/auth/me        # View details of current user
+https://foo.bar/protected      # Must have user:read access
+```
+
+???
+
+**25:30**
+
+---
+
+class: nord-dark, middle, center
+
+
+Presentation Repo -
+[/ahopkins/europython2020-overcoming-access-control](https://github.com/ahopkins/europython2020-overcoming-access-control)<br />
+PacketFabric - [https://packetfabric.com](https://packetfabric.com/)<br />
+Sanic Repo - [/huge-success/sanic](https://github.com/huge-success/sanic)<br />
+➡️ .oc-pink-7[Sanic Community] - [Forums](https://community.sanicframework.org/)<br />
+sanic-jwt - [/ahopkins/sanic-jwt](https://github.com/ahopkins/sanic-jwt)<br />
+sscopes - [Docs](https://ahopkins.github.io/structured-scopes/)<br />
+
+</textarea>
+
+	<script src="js/remark.min.js"></script>
+	<script src="js/vue.js"></script>
+	<script src="js/quasar.umd.min.js"></script>
+	<script src="js/mermaid.min.js"></script>
+	<script id="MathJax-script" async src="js/tex-mml-chtml.js"></script>
+	<script>
+		// 预处理：去掉每行开头的空格，否则超过2层锁紧的类会导致解析出BUG
+		var targetTextArea = document.getElementById("source");
+		var targetText = targetTextArea.innerHTML.replace(
+			/```[^`]+```/gm,
+			(match, index, input) => {
+				return match.replace(/[ ]/gm, "\u3000");
+			}
+		);
+		var lines = targetText.split("\n");
+
+		targetTextArea.innerHTML = lines
+			.map((line) => line.replace(/^(?![ ]+[\-|0-9])[ ]+/, ""))
+			.map((line) => line.replace(/\u3000/g, " "))
+			.join("\n");
+
+		var slideshow = remark.create({
+			ratio: "4:3", // window ratio
+			// arta, ascetic, dark, default, far, github, googlecode, idea,
+			// ir-black, magula, monokai, rainbow, solarized-dark, solarized-light,
+			// sunburst, tomorrow, tomorrow-night-blue, tomorrow-night-bright,
+			// tomorrow-night, tomorrow-night-eighties, vs, zenburn.
+			highlightStyle: "tomorrow-night-bright",
+			highlightLines: true,
+			countIncrementalSlides: false, // whether the incremental content count as one page
+			//slideNumberFormat: "", // If this parameter is set to "", the page number is not displayed
+			navigation: {
+				scroll: true, // Page turning with mouse wheel is allowed
+				touch: true, // Is it allowed to scroll back and forth by clicking on the left or right side of the screen
+				click: false, // Allow the mouse to click on the left or right side of the screen to turn back and forth
+			},
+		});
+
+		// 初始化 VUE
+		for (var el of document.querySelectorAll(".vue")) {
+			new Vue({
+				el: el,
+			});
+		}
+
+		// 初始化可点击预览的卡片
+		var preview_win_cards = document.querySelectorAll(".preview-win");
+		for (var card of preview_win_cards) {
+			((clickedCard) => {
+				clickedCard.addEventListener("click", (e) => {
+					var img = clickedCard.querySelector("img");
+					if (img) {
+						window.open(img.src);
+					}
+				});
+			})(card);
+		}
+
+		// 背景色变化兼容 F11 全屏
+		function isFullScreen() {
+			return (
+				window.fullScreen ||
+				(window.innerWidth == screen.width &&
+					window.innerHeight == screen.height)
+			);
+		}
+
+		window.addEventListener("resize", () => {
+			if (isFullScreen()) {
+				document.body.style["background-color"] = "#000";
+			} else {
+				document.body.style["background-color"] = "#d7d8d2";
+			}
+		});
+
+		// 初始化 mermaid
+		mermaid.mermaidAPI.initialize({
+			startOnLoad: false,
+			theme: "forest",
+			themeCSS: ".tick>text { font-size:26px; }  .taskTextOutsideRight,.taskTextOutsideLeft { font-size:20px; } .titleText {font-size:30px;} .sectionTitle {font-size:20px;}",
+			gantt: {
+				fontSize: 26,
+				barHeight: 30,
+				useMaxWidth: false,
+			},
+		});
+
+		var mermaidCmps = document.querySelectorAll(".mermaid");
+		for (var i = 0; i < mermaidCmps.length; i++) {
+			var mermaidCmp = mermaidCmps[i];
+			var insertSvg = function (svgCode, bindFunctions) {
+				mermaidCmp.innerHTML = svgCode;
+			};
+
+			var graphDefinition = "";
+			let pCmps = mermaidCmp.querySelectorAll("pre");
+			for (var pCmp of pCmps) {
+				graphDefinition += pCmp.textContent.replace(/\\n/g, "<br/>");
+			}
+
+			var graph = mermaid.mermaidAPI.render(
+				"graphDiv" + i,
+				graphDefinition,
+				insertSvg
+			);
+		}
+	</script>
+</body>
+
+</html>
