@@ -1,3 +1,5 @@
+![Overcoming access control in web APIs](thumbnail.png)
+
 # Overcoming access control in web APIs
 
 ## How to address security concerns using Sanic
@@ -18,3 +20,5 @@ Core take aways will include:
 Time permitting, we will even discuss some tools to be used to help ease the anxiety and make security more approachable.
 
 https://ep2020.europython.eu/talks/3TMWKW4-overcoming-access-control-in-web-apis/
+
+https://www.youtube.com/watch?v=Uqgoj43ky6A
